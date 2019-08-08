@@ -12,6 +12,8 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <args.hxx>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/map.hpp>
 
 #include "timer.h"
 
@@ -177,11 +179,214 @@ double read_vector()
     return timer.elapsedSeconds();
 }
 
+class HashMap
+{
+    vector<pair<double, uint64_t>> arr;
+    int const notUsed{ nbrOfIndices + 1 };
+
+public:
+    HashMap()
+    {
+        arr.resize(nbrOfIndices, make_pair(0, notUsed));
+    }
+
+    int hashCode(double key)
+    {
+        auto h = hash<double>{}(key);
+        return h % nbrOfIndices;
+    }
+
+    bool insertNode(double key, uint64_t value)
+    {
+        int hashIndex = hashCode(key);
+
+        int counter = 0;
+        while (arr[hashIndex].second != notUsed)
+        {
+            hashIndex++;
+            hashIndex %= nbrOfIndices;
+
+            if (++counter > nbrOfIndices) //to avoid infinite loop, shouldn't happen
+                return false;
+        }
+
+        arr[hashIndex] = make_pair(key, value);
+
+        return true;
+    }
+
+    bool get(double key, uint64_t& value)
+    {
+        int hashIndex = hashCode(key);
+        if (arr[hashIndex].first == key) // TODO: epsilon test
+        {
+            value = arr[hashIndex].second;
+            return true;
+        }
+
+        int counter = 0;
+        do
+        {
+            hashIndex++;
+            hashIndex %= nbrOfIndices;
+
+            if (arr[hashIndex].first == key)
+            {
+                value = arr[hashIndex].second;
+                return true;
+            }
+
+            if (++counter > nbrOfIndices) //to avoid infinite loop 
+                return false;
+
+        } while (arr[hashIndex].first != key);
+
+        return false;
+    }
+};
+
+double insert_hash(Weeksecs& weeksecs, Indices& indices)
+{
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        HashMap hashMap;
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            timer.start();
+            hashMap.insertNode(ws, indices[i]);
+            timer.stop();
+            ++i;
+        });
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
+
+double read_hash()
+{
+    random_device rnd;
+    default_random_engine eng(rnd());
+    uniform_int_distribution<> uid(0, nbrOfIndices - 1);
+
+    Weeksecs weeksecs;
+    Indices indices;
+
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        HashMap hashMap;
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            hashMap.insertNode(ws, indices[i++]);
+        });
+
+        vector<int> lookups(nbrOfIndices);
+        generate_n(begin(lookups), nbrOfIndices, [&]() { return uid(eng); });
+
+        for_each(begin(lookups), end(lookups), [&](int i)
+        {
+            double key = weeksecs[i];
+            timer.start();
+            uint64_t timestamp;
+            if (!hashMap.get(key, timestamp) || timestamp != indices[i])
+            {
+                cout << "Failure read_hash" << endl;
+                spdlog::error("Failure read_hash");
+            }
+            timer.stop();
+        });
+
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
+
+double insert_cereal(Weeksecs& weeksecs, Indices& indices)
+{
+    using namespace cereal;
+
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        map<double, uint64_t> map;
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            map[ws] = indices[i++];
+        });
+
+        timer.start();
+        ostringstream os;
+        BinaryOutputArchive oarchive(os);
+        oarchive(map);
+        timer.stop();
+
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
+
+double read_cereal()
+{
+    using namespace cereal;
+
+    random_device rnd;
+    default_random_engine eng(rnd());
+    uniform_int_distribution<> uid(0, nbrOfIndices - 1);
+
+    Weeksecs weeksecs;
+    Indices indices;
+
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        map<double, uint64_t> omap;
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            omap[ws] = indices[i++];
+        });
+
+        stringstream stream;
+        
+        {
+            BinaryOutputArchive oarchive(stream);
+            oarchive(omap);
+        }
+
+        vector<int> lookups(nbrOfIndices);
+        generate_n(begin(lookups), nbrOfIndices, [&]() { return uid(eng); });
+
+        map<double, uint64_t> imap;
+        BinaryInputArchive iarchive(stream);
+        timer.start();
+        iarchive(imap);
+        timer.stop();
+
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
 
 void print_result(double secs, string const& msg)
 {
     auto v(nbrOfRuns * nbrOfIndices / secs);
-    spdlog::info("{:.3f} [s], {:.1f} [items/s], {:.3f} [us/item] :{}", secs, v, 1000000.0/v, msg);
+    spdlog::info("{:6.3f} [s], {:12.1f} [items/s], {:6.3f} [us/item] :{}", secs, v, 1000000.0/v, msg);
     cout << " " << 1000000.0 / v << "[us/item]" << endl;
 }
 
@@ -273,6 +478,22 @@ int main(int argc, char* argv[])
     secs = read<map<double, uint64_t>>();
     print_result(secs, "read<unordered_map<double, uint64_t>>");
 
+    cout << "Running insert_hash ..." << endl;
+    secs = insert_hash(weeksecs, indices);
+    print_result(secs, "insert_hash");
+
+    cout << "Running read_hash ..." << endl;
+    secs = read_hash();
+    print_result(secs, "read_hash");
+
+    cout << "Running insert_cereal ..." << endl;
+    secs = insert_cereal(weeksecs, indices);
+    print_result(secs, "insert_cereal (only the time for serialize)");
+
+    cout << "Running read_cereal ..." << endl;
+    secs = read_cereal();
+    print_result(secs, "read_cereal (only the time for deserialize)");
+
     timer.stop();
     cout << endl;
 
@@ -280,3 +501,5 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+
