@@ -25,6 +25,24 @@ int nrOfLookups(0);
 using Weeksecs = vector<double>;
 using Indices = vector<int64_t>;
 
+
+template<class Container>
+auto my_equal_range(Container&& container, double target, double epsilon = 1E-6)
+-> decltype(container.equal_range(target))
+{
+    auto lower = container.lower_bound(target - epsilon);
+    auto upper = container.upper_bound(target + epsilon);
+    return std::make_pair(lower, upper);
+}
+
+template<typename Container>
+bool get_index(Container const& container, double target, uint64_t& index, double epsilon = 1E-6) {
+    auto range = my_equal_range(container, target, epsilon);
+    bool const exists(range.first != range.second);
+    if (exists) index = range.first->second;
+    return exists;
+}
+
 void generate_test_data(Weeksecs& weeksecs, Indices& indices, int k = 10)
 {
     random_device rnd;
@@ -40,12 +58,9 @@ void generate_test_data(Weeksecs& weeksecs, Indices& indices, int k = 10)
         [&](int64_t index) -> double { return (double)(index + uid(eng) / 10.0002); });
 }
 
-//typedef unordered_map<TPoint3D, int, hashFunc, equalsFunc> TPoint3DMap;
-
-double write_map(Weeksecs& weeksecs, Indices& indices)
+template<class Map>
+double insert(Weeksecs& weeksecs, Indices& indices)
 {
-    using Map = map<double, uint64_t>;
-
     Timer timer;
     for (auto c(0); c != nbrOfRuns; ++c)
     {
@@ -62,15 +77,13 @@ double write_map(Weeksecs& weeksecs, Indices& indices)
         });
         cout << '#';
     }
-    cout << endl;
 
     return timer.elapsedSeconds();
 }
 
-double read_map()
+template<class Map>
+double read()
 {
-    using Map = map<double, uint64_t>;
-
     random_device rnd;
     default_random_engine eng(rnd());
     uniform_int_distribution<> uid(0, nbrOfIndices - 1);
@@ -95,13 +108,65 @@ double read_map()
 
         for_each(begin(lookups), end(lookups), [&](int i)
         {
-            double const timestamp = weeksecs[i];
+            double key = weeksecs[i];
             timer.start();
-            auto iter = map.lower_bound(timestamp);
-            if (iter == map.end())
+            uint64_t timestamp;
+            if (!get_index<Map>(map, key, timestamp))
             {
-                cout << "Failure read_map" << endl;
-                spdlog::error("Failure read_map");
+                cout << "Failure read" << endl;
+                spdlog::error("Failure read");
+            }
+            //auto iter = map.lower_bound(timestamp);
+            //if (iter == map.end())
+            //{
+            //    cout << "Failure read" << endl;
+            //    spdlog::error("Failure read");
+            //}
+            timer.stop();
+        });
+
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
+
+double read_vector()
+{
+    using Vec = vector<double, uint64_t>;
+
+    random_device rnd;
+    default_random_engine eng(rnd());
+    uniform_int_distribution<> uid(0, nbrOfIndices - 1);
+
+    Weeksecs weeksecs;
+    Indices indices;
+
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        vector<int> lookups(nbrOfIndices);
+        generate_n(begin(lookups), nbrOfIndices, [&]() { return uid(eng); });
+
+        for_each(begin(lookups), end(lookups), [&](int i)
+        {
+            double key = weeksecs[i];
+            timer.start();
+            bool found(false);
+            for (auto&& ws : weeksecs)
+            {
+                if (ws >= key && (ws - key) < 1E-6)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                cout << "Failure read vector" << endl;
+                spdlog::error("Failure read vector");
             }
             timer.stop();
         });
@@ -109,14 +174,15 @@ double read_map()
         cout << '#';
     }
 
-    cout << endl;
-
     return timer.elapsedSeconds();
 }
 
+
 void print_result(double secs, string const& msg)
 {
-    spdlog::info("{:.3f} [s], {:.1f} [items/s] :{}", secs, nbrOfRuns * nbrOfIndices / secs, msg);
+    auto v(nbrOfRuns * nbrOfIndices / secs);
+    spdlog::info("{:.3f} [s], {:.1f} [items/s], {:.3f} [us/item] :{}", secs, v, 1000000.0/v, msg);
+    cout << " " << 1000000.0 / v << "[us/item]" << endl;
 }
 
 int main(int argc, char* argv[])
@@ -180,16 +246,32 @@ int main(int argc, char* argv[])
 
     double secs(0);
 
-    cout << "Running write_map ..." << endl;
-    secs = write_map(weeksecs, indices);
-    print_result(secs, "write_map");
-
-    cout << "Running read_map ..." << endl;
-    secs = read_map();
-    print_result(secs, "read_map");
-
     Timer timer;
     timer.start();
+
+    cout << "Running insert<vector<double, uint64_t>> ..." << endl;
+    secs = insert<map<double, uint64_t>>(weeksecs, indices);
+    print_result(secs, "insert<map<double, uint64_t>>");
+
+    cout << "Running read_vector ..." << endl;
+    secs = read_vector();
+    print_result(secs, "read_vector");
+
+    cout << "Running insert<map<double, uint64_t>> ..." << endl;
+    secs = insert<map<double, uint64_t>>(weeksecs, indices);
+    print_result(secs, "insert<map<double, uint64_t>>");
+
+    cout << "Running read<map<double, uint64_t>> ..." << endl;
+    secs = read<map<double, uint64_t>>();
+    print_result(secs, "read<map<double, uint64_t>>");
+
+    cout << "Running insert<unordered_map<double, uint64_t>> ..." << endl;
+    secs = insert<unordered_map<double, uint64_t>>(weeksecs, indices);
+    print_result(secs, "insert<unordered_map<double, uint64_t>>");
+
+    cout << "Running read<unordered_map<double, uint64_t>> ..." << endl;
+    secs = read<map<double, uint64_t>>();
+    print_result(secs, "read<unordered_map<double, uint64_t>>");
 
     timer.stop();
     cout << endl;

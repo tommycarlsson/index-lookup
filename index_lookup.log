@@ -1,0 +1,23 @@
+[08/08/19 11:27:15] ===== Start test ============
+[08/08/19 11:27:15] Args: 
+[08/08/19 11:27:19] 3.055 [s], 6547655.4 [items/s], 0.153 [us/item] :write_map<map<double, uint64_t>>
+[08/08/19 11:27:28] 4.511 [s], 4433494.9 [items/s], 0.226 [us/item] :read_map<map<double, uint64_t>>
+[08/08/19 11:27:32] 2.563 [s], 7803695.8 [items/s], 0.128 [us/item] :write_map<unordered_map<double, uint64_t>>
+[08/08/19 11:27:41] 4.501 [s], 4443196.1 [items/s], 0.225 [us/item] :read_map<unordered_map<double, uint64_t>>
+[08/08/19 11:27:41] Total time: 1e-07s
+[08/08/19 11:30:17] ===== Start test ============
+[08/08/19 11:30:17] Args: 
+[08/08/19 11:30:22] 3.070 [s], 6513794.4 [items/s], 0.154 [us/item] :write_map<map<double, uint64_t>>
+[08/08/19 11:30:31] 4.587 [s], 4360097.6 [items/s], 0.229 [us/item] :read_map<map<double, uint64_t>>
+[08/08/19 11:30:35] 2.569 [s], 7785936.3 [items/s], 0.128 [us/item] :write_map<unordered_map<double, uint64_t>>
+[08/08/19 11:30:44] 4.537 [s], 4407917.1 [items/s], 0.227 [us/item] :read_map<unordered_map<double, uint64_t>>
+[08/08/19 11:30:44] Total time: 26.8485s
+[08/08/19 11:42:03] ===== Start test ============
+[08/08/19 11:42:03] Args: 
+[08/08/19 11:42:08] 3.061 [s], 6533060.6 [items/s], 0.153 [us/item] :insert<map<double, uint64_t>>
+[08/08/19 11:42:13] 2.944 [s], 6793497.0 [items/s], 0.147 [us/item] :insert<map<double, uint64_t>>
+[08/08/19 11:42:22] 4.498 [s], 4445985.9 [items/s], 0.225 [us/item] :read<map<double, uint64_t>>
+[08/08/19 11:42:26] 2.555 [s], 7828044.8 [items/s], 0.128 [us/item] :insert<unordered_map<double, uint64_t>>
+[08/08/19 11:42:35] 4.511 [s], 4433252.0 [items/s], 0.226 [us/item] :read<unordered_map<double, uint64_t>>
+[08/08/19 11:42:35] Total time: 31.3359s
+

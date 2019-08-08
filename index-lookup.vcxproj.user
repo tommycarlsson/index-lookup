@@ -9,5 +9,6 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;C:\Users\CART\dev\vcpkg\installed\x64-windows\debug\bin
 </LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>-c 1 -s 2</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>
