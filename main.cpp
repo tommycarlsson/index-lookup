@@ -133,9 +133,33 @@ double read()
     return timer.elapsedSeconds();
 }
 
+double insert_vector(Weeksecs& weeksecs, Indices& indices)
+{
+    using Vec = vector<pair<double, uint64_t>>;
+
+    Timer timer;
+    for (auto c(0); c != nbrOfRuns; ++c)
+    {
+        generate_test_data(weeksecs, indices);
+
+        Vec vec(nbrOfIndices);
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            timer.start();
+            vec[i] = make_pair(ws, indices[i]);
+            timer.stop();
+            ++i;
+        });
+        cout << '#';
+    }
+
+    return timer.elapsedSeconds();
+}
+
 double read_vector()
 {
-    using Vec = vector<double, uint64_t>;
+    using Vec = vector<pair<double, uint64_t>>;
 
     random_device rnd;
     default_random_engine eng(rnd());
@@ -149,6 +173,14 @@ double read_vector()
     {
         generate_test_data(weeksecs, indices);
 
+        Vec vec(nbrOfIndices);
+        int i(0);
+        for_each(begin(weeksecs), end(weeksecs), [&](double ws)
+        {
+            vec[i] = make_pair(ws, indices[i]);
+            ++i;
+        });
+
         vector<int> lookups(nbrOfIndices);
         generate_n(begin(lookups), nbrOfIndices, [&]() { return uid(eng); });
 
@@ -157,9 +189,9 @@ double read_vector()
             double key = weeksecs[i];
             timer.start();
             bool found(false);
-            for (auto&& ws : weeksecs)
+            for (auto&& v : vec)
             {
-                if (ws >= key && (ws - key) < 1E-6)
+                if (v.first >= key && (v.first - key) < 1E-6)
                 {
                     found = true;
                     break;
@@ -404,13 +436,6 @@ int main(int argc, char* argv[])
     args::ValueFlag<int> size(parser, "size", "Nbr of indices", { 's' }, 10000);
     args::ValueFlag<int> procent(parser, "procent", "Lookups procent", { 'p' }, 20);
 
-    ostringstream cmdLine;
-    cmdLine << "Args: ";
-    for (auto i(1); i != argc; ++i)
-    {
-        cmdLine << string(argv[i]) + " ";
-    }
-
     try
     {
         parser.ParseCLI(argc, argv);
@@ -437,7 +462,17 @@ int main(int argc, char* argv[])
     nrOfLookups = (int)(args::get(procent) / 100.0 * nbrOfIndices);
 
     spdlog::info("===== Start test ============");
-    spdlog::info(cmdLine.str());
+
+    if (argc > 1)
+    {
+        ostringstream cmdLine;
+        cmdLine << "Args: ";
+        for (auto i(1); i != argc; ++i)
+        {
+            cmdLine << string(argv[i]) + " ";
+        }
+        spdlog::info(cmdLine.str());
+    }
 
     Weeksecs weeksecs;
     Indices indices;
@@ -454,11 +489,11 @@ int main(int argc, char* argv[])
     Timer timer;
     timer.start();
 
-    cout << "Running insert<vector<double, uint64_t>> ..." << endl;
-    secs = insert<map<double, uint64_t>>(weeksecs, indices);
-    print_result(secs, "insert<map<double, uint64_t>>");
+    cout << "Running insert_vector pair<double, uint64_t> ..." << endl;
+    secs = insert_vector(weeksecs, indices);
+    print_result(secs, "insert_vector");
 
-    cout << "Running read_vector ..." << endl;
+    cout << "Running read_vector pair<double, uint64_t> ..." << endl;
     secs = read_vector();
     print_result(secs, "read_vector");
 

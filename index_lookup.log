@@ -1,13 +1,12 @@
-[08/08/19 17:11:45] ===== Start test ============
-[08/08/19 17:11:45] Args: 
-[08/08/19 17:11:45]  0.152 [s],    6567018.7 [items/s],  0.152 [us/item] :insert<map<double, uint64_t>>
-[08/08/19 17:11:51]  5.255 [s],     190282.3 [items/s],  5.255 [us/item] :read_vector
-[08/08/19 17:11:51]  0.152 [s],    6589290.8 [items/s],  0.152 [us/item] :insert<map<double, uint64_t>>
-[08/08/19 17:11:51]  0.194 [s],    5151052.0 [items/s],  0.194 [us/item] :read<map<double, uint64_t>>
-[08/08/19 17:11:52]  0.138 [s],    7268519.5 [items/s],  0.138 [us/item] :insert<unordered_map<double, uint64_t>>
-[08/08/19 17:11:52]  0.196 [s],    5108893.5 [items/s],  0.196 [us/item] :read<unordered_map<double, uint64_t>>
-[08/08/19 17:11:53]  0.426 [s],    2346825.6 [items/s],  0.426 [us/item] :insert_hash
-[08/08/19 17:11:53]  0.430 [s],    2324901.8 [items/s],  0.430 [us/item] :read_hash
-[08/08/19 17:11:54]  0.041 [s],   24487177.3 [items/s],  0.041 [us/item] :insert_cereal (only the time for serialize)
-[08/08/19 17:11:54]  0.099 [s],   10128551.6 [items/s],  0.099 [us/item] :read_cereal (only the time for deserialize)
-[08/08/19 17:11:54] Total time: 8.83614s
+[08/09/19 13:25:45] ===== Start test ============
+[08/09/19 13:25:45]  0.032 [s],   31023239.5 [items/s],  0.032 [us/item] :insert_vector
+[08/09/19 13:25:50]  4.470 [s],     223735.1 [items/s],  4.470 [us/item] :read_vector
+[08/09/19 13:25:50]  0.150 [s],    6681553.2 [items/s],  0.150 [us/item] :insert<map<double, uint64_t>>
+[08/09/19 13:25:51]  0.196 [s],    5113509.7 [items/s],  0.196 [us/item] :read<map<double, uint64_t>>
+[08/09/19 13:25:51]  0.139 [s],    7169656.3 [items/s],  0.139 [us/item] :insert<unordered_map<double, uint64_t>>
+[08/09/19 13:25:51]  0.196 [s],    5104374.2 [items/s],  0.196 [us/item] :read<unordered_map<double, uint64_t>>
+[08/09/19 13:25:52]  0.424 [s],    2357825.5 [items/s],  0.424 [us/item] :insert_hash
+[08/09/19 13:25:53]  0.446 [s],    2239991.3 [items/s],  0.446 [us/item] :read_hash
+[08/09/19 13:25:53]  0.041 [s],   24624901.2 [items/s],  0.041 [us/item] :insert_cereal (only the time for serialize)
+[08/09/19 13:25:53]  0.101 [s],    9871570.9 [items/s],  0.101 [us/item] :read_cereal (only the time for deserialize)
+[08/09/19 13:25:53] Total time: 7.95306s
